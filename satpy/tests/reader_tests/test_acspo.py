@@ -15,9 +15,11 @@ try:
 except ImportError:
     import mock
 
-from datetime import datetime, timedelta
 import numpy as np
-from satpy.tests.reader_tests.test_netcdf_utils import FakeNetCDF4FileHandler
+from datetime import datetime, timedelta
+from xarray import DataArray
+from satpy.tests.reader_tests.test_netcdf_utils import \
+    FakeNetCDF4FileHandler, FakeXArrayDataset
 
 DEFAULT_FILE_DTYPE = np.uint16
 DEFAULT_FILE_SHAPE = (10, 300)
@@ -39,60 +41,60 @@ class FakeNetCDF4FileHandler2(FakeNetCDF4FileHandler):
             'VIIRS_NPP': ('NPP', 'VIIRS'),
         }[filename_info['sensor_id']]
 
-        file_content = {
-            '/attr/platform': sat,
-            '/attr/sensor': inst,
-            '/attr/spatial_resolution': '742 m at nadir',
-            '/attr/time_coverage_start': dt.strftime('%Y%m%dT%H%M%SZ'),
-            '/attr/time_coverage_end': (dt + timedelta(minutes=6)).strftime('%Y%m%dT%H%M%SZ'),
-        }
+        file_content = FakeXArrayDataset()
+        file_content.attrs.update({
+            'platform': sat,
+            'sensor': inst,
+            'spatial_resolution': '742 m at nadir',
+            'time_coverage_start': dt.strftime('%Y%m%dT%H%M%SZ'),
+            'time_coverage_end': (dt + timedelta(minutes=6)).strftime('%Y%m%dT%H%M%SZ'),
+        })
 
-        file_content['lat'] = DEFAULT_LAT_DATA
-        file_content['lat/attr/comment'] = 'Latitude of retrievals'
-        file_content['lat/attr/long_name'] = 'latitude'
-        file_content['lat/attr/standard_name'] = 'latitude'
-        file_content['lat/attr/units'] = 'degrees_north'
-        file_content['lat/attr/valid_min'] = -90.
-        file_content['lat/attr/valid_max'] = 90.
-        file_content['lat/shape'] = DEFAULT_FILE_SHAPE
+        file_content['lat'] = DataArray(DEFAULT_LAT_DATA,
+                                        dims=('y', 'x'),
+                                        attrs={
+                                            'comment': 'Latitude of retrievals',
+                                            'long_name': 'latitude',
+                                            'standard_name': 'latitude',
+                                            'units': 'degrees_north',
+                                            'valid_min': -90.,
+                                            'valid_max': 90.,
+                                        })
 
-        file_content['lon'] = DEFAULT_LON_DATA
-        file_content['lon/attr/comment'] = 'Longitude of retrievals'
-        file_content['lon/attr/long_name'] = 'longitude'
-        file_content['lon/attr/standard_name'] = 'longitude'
-        file_content['lon/attr/units'] = 'degrees_east'
-        file_content['lon/attr/valid_min'] = -180.
-        file_content['lon/attr/valid_max'] = 180.
-        file_content['lon/shape'] = DEFAULT_FILE_SHAPE
+        file_content['lon'] = DataArray(DEFAULT_LON_DATA,
+                                        dims=('y', 'x'),
+                                        attrs={
+                                            'comment': 'Longitude of retrievals',
+                                            'long_name': 'longitude',
+                                            'standard_name': 'longitude',
+                                            'units': 'degrees_east',
+                                            'valid_min': -180.,
+                                            'valid_max': 180.,
+                                        })
 
         for k in ['sea_surface_temperature',
                   'satellite_zenith_angle',
                   'sea_ice_fraction',
                   'wind_speed']:
-            file_content[k] = DEFAULT_FILE_DATA[None, ...]
-            file_content[k + '/attr/scale_factor'] = 1.1
-            file_content[k + '/attr/add_offset'] = 0.1
-            file_content[k + '/attr/units'] = 'some_units'
-            file_content[k + '/attr/comment'] = 'comment'
-            file_content[k + '/attr/standard_name'] = 'standard_name'
-            file_content[k + '/attr/long_name'] = 'long_name'
-            file_content[k + '/attr/valid_min'] = 0
-            file_content[k + '/attr/valid_max'] = 65534
-            file_content[k + '/attr/_FillValue'] = 65534
-            file_content[k + '/shape'] = (1, DEFAULT_FILE_SHAPE[0], DEFAULT_FILE_SHAPE[1])
+            file_content[k] = DataArray(DEFAULT_FILE_DATA[None, ...],
+                                        dims=('z', 'y', 'x'),
+                                        attrs={
+                                            'scale_factor': 1.1,
+                                            'add_offset': 0.1,
+                                            'units': 'some_units',
+                                            'comment': 'comment',
+                                            'standard_name': 'standard_name',
+                                            'long_name': 'long_name',
+                                            'valid_min': 0,
+                                            'valid_max': 65534,
+                                            '_FillValue': 65534,
+                                        })
 
-        file_content['l2p_flags'] = np.zeros(
+        file_content['l2p_flags'] = DataArray(np.zeros(
             (1, DEFAULT_FILE_SHAPE[0], DEFAULT_FILE_SHAPE[1]),
-            dtype=np.uint16)
-
-        # convert to xarrays
-        from xarray import DataArray
-        for key, val in file_content.items():
-            if isinstance(val, np.ndarray):
-                if val.ndim > 1:
-                    file_content[key] = DataArray(val, dims=tuple(x for x in 'zyx'[3-val.ndim:]))
-                else:
-                    file_content[key] = DataArray(val)
+            dtype=np.uint16),
+            dims=('z', 'y', 'x'),
+        )
 
         return file_content
 

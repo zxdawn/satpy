@@ -13,13 +13,19 @@ else:
     import unittest
 
 
+class FakeXArrayDataset(dict):
+    def __init__(self, *args, **kwargs):
+        super(FakeXArrayDataset, self).__init__(*args, **kwargs)
+        self.attrs = {}
+
+
 class FakeNetCDF4FileHandler(NetCDF4FileHandler):
     """Swap-in NetCDF4 File Handler for reader tests to use"""
     def __init__(self, filename, filename_info, filetype_info, **kwargs):
         """Get fake file content from 'get_test_content'"""
         super(NetCDF4FileHandler, self).__init__(filename, filename_info, filetype_info)
-        self.file_content = self.get_test_content(filename, filename_info, filetype_info)
-        self.file_content.update(kwargs)
+        self.file_handle = self.get_test_content(filename, filename_info, filetype_info)
+        self.file_handle.attrs.update(kwargs)
 
     def get_test_content(self, filename, filename_info, filetype_info):
         """Mimic reader input file content
@@ -29,16 +35,19 @@ class FakeNetCDF4FileHandler(NetCDF4FileHandler):
             filename_info (dict): Dict of metadata pulled from filename
             filetype_info (dict): Dict of metadata from the reader's yaml config for this file type
 
-        Returns: dict of file content with keys like:
-        
-            - 'dataset'
-            - '/attr/global_attr'
-            - 'dataset/attr/global_attr'
-            - 'dataset/shape'
-            - '/dimension/my_dim'
+        Returns: FakeXArrayDataset
 
         """
         raise NotImplementedError("Fake File Handler subclass must implement 'get_test_content'")
+
+    def __getitem__(self, item):
+        return self.file_handle[item]
+
+    def __contains__(self, item):
+        return item in self.file_handle
+
+    def get(self, item, default=None):
+        return self.file_handle.get(item, default)
 
 
 class TestNetCDF4FileHandler(unittest.TestCase):
@@ -94,12 +103,12 @@ class TestNetCDF4FileHandler(unittest.TestCase):
         import xarray as xr
         file_handler = NetCDF4FileHandler('test.nc', {}, {})
 
-        self.assertEqual(file_handler['/dimension/rows'], 10)
-        self.assertEqual(file_handler['/dimension/cols'], 100)
+        self.assertEqual(file_handler.file_handle.dims['rows'], 10)
+        self.assertEqual(file_handler.file_handle.dims['cols'], 100)
 
         for ds in ('test_group/ds1_f', 'test_group/ds1_i', 'ds2_f', 'ds2_i'):
             self.assertEqual(file_handler[ds].dtype, np.float32 if ds.endswith('f') else np.int32)
-            self.assertTupleEqual(file_handler[ds + '/shape'], (10, 100))
+            self.assertTupleEqual(file_handler[ds].shape, (10, 100))
             self.assertEqual(file_handler[ds + '/attr/test_attr_str'], 'test_string')
             self.assertEqual(file_handler[ds + '/attr/test_attr_int'], 0)
             self.assertEqual(file_handler[ds + '/attr/test_attr_float'], 1.2)

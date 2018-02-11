@@ -25,6 +25,7 @@
 """Helpers for reading netcdf-based files.
 
 """
+import warnings
 import netCDF4
 import logging
 import xarray as xr
@@ -49,94 +50,57 @@ class NetCDF4FileHandler(BaseFileHandler):
 
         wrapper["group/subgroup/var_name"]
 
-    Attributes can be accessed by appending "/attr/attr_name" to the
-    item string:
+    Attributes can be accessed by using a variables `.attrs` dictionary:
+
+        wrapper["group/subgroup/var_name"].attrs["units"]
+
+    Or if needed in a YAML configuration file as a string:
 
         wrapper["group/subgroup/var_name/attr/units"]
 
-    Or for global attributes:
+    And for global attributes in a YAML configuration file as a string:
 
         wrapper["/attr/platform_short_name"]
 
-    Note that loading datasets requires reopening the original file, but to
-    get just the shape of the dataset append "/shape" to the item string:
-
-        wrapper["group/subgroup/var_name/shape"]
-
     """
 
-    def __init__(self, filename, filename_info, filetype_info, auto_maskandscale=False):
+    def __init__(self, filename, filename_info, filetype_info,
+                 mask_and_scale=False, decode_cf=True, autoclose=False,
+                 engine='netcdf4', chunks=None):
         super(NetCDF4FileHandler, self).__init__(
             filename, filename_info, filetype_info)
-        self.file_content = {}
+
         try:
-            file_handle = netCDF4.Dataset(self.filename, 'r')
+            file_handle = xr.open_dataset(self.filename,
+                                          decode_cf=decode_cf,
+                                          mask_and_scale=mask_and_scale,
+                                          autoclose=autoclose,
+                                          engine=engine,
+                                          chunks=chunks or CHUNK_SIZE)
+            self.file_handle = file_handle
         except IOError:
             LOG.exception(
                 'Failed reading file %s. Possibly corrupted file', self.filename)
             raise
 
-        self.auto_maskandscale = auto_maskandscale
-        if hasattr(file_handle, "set_auto_maskandscale"):
-            file_handle.set_auto_maskandscale(auto_maskandscale)
-
-        self.collect_metadata("", file_handle)
-        self.collect_dimensions("", file_handle)
-        file_handle.close()
-
-    def _collect_attrs(self, name, obj):
-        """Collect all the attributes for the provided file object.
-        """
-        for key in obj.ncattrs():
-            value = getattr(obj, key)
-            fc_key = "{}/attr/{}".format(name, key)
-            try:
-                self.file_content[fc_key] = np2str(value)
-            except ValueError:
-                self.file_content[fc_key] = value
-
-    def collect_metadata(self, name, obj):
-        """Collect all file variables and attributes for the provided file object.
-
-        This method also iterates through subgroups of the provided object.
-        """
-        # Look through each subgroup
-        base_name = name + "/" if name else ""
-        for group_name, group_obj in obj.groups.items():
-            self.collect_metadata(base_name + group_name, group_obj)
-        for var_name, var_obj in obj.variables.items():
-            var_name = base_name + var_name
-            self.file_content[var_name] = var_obj
-            self.file_content[var_name + "/dtype"] = var_obj.dtype
-            self.file_content[var_name + "/shape"] = var_obj.shape
-            self._collect_attrs(var_name, var_obj)
-        self._collect_attrs(name, obj)
-
-    def collect_dimensions(self, name, obj):
-        for dim_name, dim_obj in obj.dimensions.items():
-            dim_name = "{}/dimension/{}".format(name, dim_name)
-            self.file_content[dim_name] = len(dim_obj)
-
     def __getitem__(self, key):
-        val = self.file_content[key]
-        if isinstance(val, netCDF4.Variable):
-            # these datasets are closed and inaccessible when the file is
-            # closed, need to reopen
-            # TODO: Handle HDF4 versus NetCDF3 versus NetCDF4
-            parts = key.rsplit('/', 1)
-            if len(parts) == 2:
-                group, key = parts
+        if '/attr/' in key:
+            var_name, attr_name = key.split('/attr/')
+            if not var_name:
+                return self.file_handle.attrs[attr_name]
             else:
-                group = None
-            val = xr.open_dataset(self.filename, group=group, chunks=CHUNK_SIZE,
-                                  mask_and_scale=self.auto_maskandscale)[key]
-        return val
+                return self.file_handle[var_name].attrs[attr_name]
+        elif key.endswith('/shape'):
+            warnings.warn("Deprecated use of 'var_name/shape' in file handler.")
+            return self.file_handle[key[:-6]].shape
+        elif key.endswith('/dtype'):
+            warnings.warn("Deprecated use of 'var_name/dtype' in file handler.")
+            return self.file_handle
+        else:
+            return self.file_handle[key]
 
     def __contains__(self, item):
-        return item in self.file_content
+        return item in self.file_handle
 
     def get(self, item, default=None):
-        if item in self:
-            return self[item]
-        else:
-            return default
+        return self.file_handle.get(item, default)

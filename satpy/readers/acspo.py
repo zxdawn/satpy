@@ -50,7 +50,7 @@ class ACSPOFileHandler(NetCDF4FileHandler):
     """ACSPO L2P SST File Reader"""
     @property
     def platform_name(self):
-        res = self['/attr/platform']
+        res = self.file_handle.attrs['platform']
         if isinstance(res, np.ndarray):
             return str(res.astype(str))
         else:
@@ -58,7 +58,7 @@ class ACSPOFileHandler(NetCDF4FileHandler):
 
     @property
     def sensor_name(self):
-        res = self['/attr/sensor']
+        res = self.file_handle.attrs['sensor']
         if isinstance(res, np.ndarray):
             return str(res.astype(str))
         else:
@@ -76,11 +76,11 @@ class ACSPOFileHandler(NetCDF4FileHandler):
             
         """
         var_path = ds_info.get('file_key', '{}'.format(ds_id.name))
-        if var_path + '/shape' not in self:
+        if hasattr(self[var_path], 'shape'):
             # loading a scalar value
             shape = 1
         else:
-            shape = self[var_path + '/shape']
+            shape = self[var_path].shape
             if len(shape) == 3:
                 if shape[0] != 1:
                     raise ValueError("Not sure how to load 3D Dataset with more than 1 time")
@@ -94,19 +94,19 @@ class ACSPOFileHandler(NetCDF4FileHandler):
 
     @property
     def start_time(self):
-        return self._parse_datetime(self['/attr/time_coverage_start'])
+        return self._parse_datetime(self.file_handle.attrs['time_coverage_start'])
 
     @property
     def end_time(self):
-        return self._parse_datetime(self['/attr/time_coverage_end'])
+        return self._parse_datetime(self.file_handle.attrs['time_coverage_end'])
 
     def get_metadata(self, dataset_id, ds_info):
         var_path = ds_info.get('file_key', '{}'.format(dataset_id.name))
         shape = self.get_shape(dataset_id, ds_info)
-        units = self[var_path + '/attr/units']
+        units = self[var_path].attrs['units']
         info = getattr(self[var_path], 'attrs', {})
-        standard_name = self[var_path + '/attr/standard_name']
-        resolution = float(self['/attr/spatial_resolution'].split(' ')[0])
+        standard_name = self[var_path].attrs['standard_name']
+        resolution = float(self.file_handle.attrs['spatial_resolution'].split(' ')[0])
         rows_per_scan = ROWS_PER_SCAN.get(self.sensor_name) or 0
         info.update(dataset_id.to_dict())
         info.update({
@@ -117,8 +117,8 @@ class ACSPOFileHandler(NetCDF4FileHandler):
             'standard_name': standard_name,
             'resolution': resolution,
             'rows_per_scan': rows_per_scan,
-            'long_name': self.get(var_path + '/attr/long_name'),
-            'comment': self.get(var_path + '/attr/comment'),
+            'long_name': self[var_path].attrs.get('long_name'),
+            'comment': self[var_path].attrs.get('comment'),
         })
         return info
 
@@ -127,7 +127,7 @@ class ACSPOFileHandler(NetCDF4FileHandler):
         var_path = ds_info.get('file_key', '{}'.format(dataset_id.name))
         metadata = self.get_metadata(dataset_id, ds_info)
         shape = metadata['shape']
-        file_shape = self[var_path + '/shape']
+        file_shape = self[var_path].shape
         if isinstance(shape, tuple) and len(shape) == 2:
             # 2D array
             if xslice.start is not None:
@@ -138,11 +138,11 @@ class ACSPOFileHandler(NetCDF4FileHandler):
             shape = ((yslice.stop - yslice.start) / yslice.step,)
         metadata['shape'] = shape
 
-        valid_min = self[var_path + '/attr/valid_min']
-        valid_max = self[var_path + '/attr/valid_max']
+        valid_min = self[var_path].attrs['valid_min']
+        valid_max = self[var_path].attrs['valid_max']
         # no need to check fill value since we are using valid min/max
-        scale_factor = self.get(var_path + '/attr/scale_factor')
-        add_offset = self.get(var_path + '/attr/add_offset')
+        scale_factor = self[var_path].attrs.get('scale_factor')
+        add_offset = self[var_path].attrs.get('add_offset')
 
         if isinstance(file_shape, tuple) and len(file_shape) == 3:
             data = self[var_path][0, yslice, xslice]
