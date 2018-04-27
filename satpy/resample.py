@@ -446,6 +446,7 @@ class BilinearResampler(BaseResampler):
         res = self.resampler.get_sample_from_bil_info(data,
                                                       fill_value=fill_value,
                                                       output_shape=target_shape)
+
         return res
 
 
