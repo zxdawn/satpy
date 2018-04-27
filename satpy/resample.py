@@ -435,7 +435,6 @@ class BilinearResampler(BaseResampler):
             else:
                 del bilinear_t, bilinear_s, input_idxs, idx_arr
 
-
     def compute(self, data, fill_value=None, **kwargs):
         """Resample the given data using bilinear interpolation"""
         del kwargs
