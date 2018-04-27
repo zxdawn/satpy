@@ -458,7 +458,7 @@ class BilinearResampler(BaseResampler):
                                                      segments=segments)
 
             bilinear_t, bilinear_s, input_idxs, idx_arr = \
-                self.resampler.get_neighbour_info()
+                self.resampler.get_bil_info()
 
             if cache_dir:
                 self.cache = {'bilinear_s': bilinear_s,
@@ -477,7 +477,8 @@ class BilinearResampler(BaseResampler):
 
         if fill_value is None:
             fill_value = data.attrs.get('_FillValue')
-        res = self.resampler.get_sample_from_bil_info(da.ravel(data),
+        target_shape = self.target_geo_def.shape
+        res = self.resampler.get_sample_from_bil_info(data.data,
                                                       fill_value=fill_value,
                                                       output_shape=target_shape)
 
