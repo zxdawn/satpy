@@ -39,6 +39,7 @@ from pyresample.bilinear import get_bil_info, get_sample_from_bil_info
 from pyresample.ewa import fornav, ll2cr
 from pyresample.geometry import SwathDefinition, AreaDefinition
 from pyresample.kd_tree import XArrayResamplerNN
+from pyresample.bilinear.xarray import XArrayResamplerBilinear
 from satpy import CHUNK_SIZE
 from satpy.config import config_search_paths, get_config_path
 
@@ -380,7 +381,11 @@ class BilinearResampler(BaseResampler):
 
     """Resample using bilinear."""
 
-    def precompute(self, mask=None, radius_of_influence=50000,
+    def __init__(self, source_geo_def, target_geo_def):
+        super(BilinearResampler, self).__init__(source_geo_def, target_geo_def)
+        self.resampler = None
+
+    def precompute(self, mask=None, radius_of_influence=50000, epsilon=0,
                    reduce_data=True, nprocs=1, segments=None,
                    cache_dir=False, **kwargs):
         """Create bilinear coefficients and store them for later use.
@@ -401,52 +406,45 @@ class BilinearResampler(BaseResampler):
         filename = self._create_cache_filename(cache_dir, bil_hash)
         self._read_params_from_cache(cache_dir, bil_hash, filename)
 
-        if self.cache is not None:
-            LOG.debug("Loaded bilinear parameters")
-            return self.cache
-        else:
-            LOG.debug("Computing bilinear parameters")
+        if self.resampler is None:
+            if self.cache is not None:
+                LOG.debug("Loaded bilinear parameters")
+                return self.cache
+            else:
+                LOG.debug("Computing bilinear parameters")
 
-        bilinear_t, bilinear_s, input_idxs, idx_arr = get_bil_info(source_geo_def, self.target_geo_def,
-                                                                   radius_of_influence, neighbours=32,
-                                                                   nprocs=nprocs, masked=False)
-        self.cache = {'bilinear_s': bilinear_s,
-                      'bilinear_t': bilinear_t,
-                      'input_idxs': input_idxs,
-                      'idx_arr': idx_arr}
+            self.resampler = XArrayResamplerBilinear(source_geo_def,
+                                                     self.target_geo_def,
+                                                     radius_of_influence,
+                                                     neighbours=32,
+                                                     epsilon=epsilon,
+                                                     reduce_data=reduce_data,
+                                                     nprocs=nprocs,
+                                                     segments=segments)
 
-        self._update_caches(bil_hash, cache_dir, filename)
+            bilinear_t, bilinear_s, input_idxs, idx_arr = \
+                self.resampler.get_neighbour_info()
 
-        return self.cache
+            if cache_dir:
+                self.cache = {'bilinear_s': bilinear_s,
+                              'bilinear_t': bilinear_t,
+                              'input_idxs': input_idxs,
+                              'idx_arr': idx_arr}
+
+                self._update_caches(bil_hash, cache_dir, filename)
+            else:
+                del bilinear_t, bilinear_s, input_idxs, idx_arr
+
 
     def compute(self, data, fill_value=None, **kwargs):
         """Resample the given data using bilinear interpolation"""
         del kwargs
 
-        target_shape = self.target_geo_def.shape
-        if data.ndim == 3:
-            output_shape = list(target_shape)
-            output_shape.append(data.shape[-1])
-            res = np.zeros(output_shape, dtype=data.dtype)
-            for i in range(data.shape[-1]):
-                res[:, :, i] = get_sample_from_bil_info(data[:, :, i].ravel(),
-                                                        self.cache[
-                                                            'bilinear_t'],
-                                                        self.cache[
-                                                            'bilinear_s'],
-                                                        self.cache[
-                                                            'input_idxs'],
-                                                        self.cache['idx_arr'],
-                                                        output_shape=target_shape)
-
-        else:
-            res = get_sample_from_bil_info(data.ravel(),
-                                           self.cache['bilinear_t'],
-                                           self.cache['bilinear_s'],
-                                           self.cache['input_idxs'],
-                                           self.cache['idx_arr'],
-                                           output_shape=target_shape)
-        res = np.ma.masked_invalid(res)
+        if fill_value is None:
+            fill_value = data.attrs.get('_FillValue')
+        res = self.resampler.get_sample_from_bil_info(da.ravel(data),
+                                                      fill_value=fill_value,
+                                                      output_shape=target_shape)
 
         return res
 
