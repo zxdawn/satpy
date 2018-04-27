@@ -443,9 +443,14 @@ class BilinearResampler(BaseResampler):
         if fill_value is None:
             fill_value = data.attrs.get('_FillValue')
         target_shape = self.target_geo_def.shape
-        res = self.resampler.get_sample_from_bil_info(data.data,
-                                                      fill_value=fill_value,
-                                                      output_shape=target_shape)
+
+        res = np.nan * np.zeros((data.shape[0], target_shape[0],
+                                 target_shape[1]))
+        for i in range(data.shape[0]):
+            res[i, :, :] = \
+                self.resampler.get_sample_from_bil_info(data.data[i, :, :],
+                                                        fill_value=fill_value,
+                                                        output_shape=target_shape)
 
         return res
 
