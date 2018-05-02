@@ -39,7 +39,7 @@ from pyresample.bilinear import get_bil_info, get_sample_from_bil_info
 from pyresample.ewa import fornav, ll2cr
 from pyresample.geometry import SwathDefinition, AreaDefinition
 from pyresample.kd_tree import XArrayResamplerNN
-from pyresample.bilinear.xarray import XArrayResamplerBilinear
+from pyresample.bilinear.xarr import XArrayResamplerBilinear
 from satpy import CHUNK_SIZE
 from satpy.config import config_search_paths, get_config_path
 
