@@ -45,8 +45,6 @@ from satpy.config import config_search_paths, get_config_path
 
 LOG = getLogger(__name__)
 
-CACHE_SIZE = 10
-
 resamplers_cache = WeakValueDictionary()
 
 
@@ -163,12 +161,13 @@ class BaseResampler(object):
         """
         self.resample(*args, **kwargs)
 
-    def _create_cache_filename(self, cache_dir=None, **kwargs):
+    def _create_cache_filename(self, cache_dir=None, prefix='resample_lut_',
+                               **kwargs):
         """Create filename for the cached resampling parameters"""
         cache_dir = cache_dir or '.'
         hash_str = self.get_hash(**kwargs)
 
-        return os.path.join(cache_dir, 'resample_lut-' + hash_str + '.npz')
+        return os.path.join(cache_dir, prefix + hash_str + '.npz')
 
 
 class KDTreeResampler(BaseResampler):
@@ -218,7 +217,9 @@ class KDTreeResampler(BaseResampler):
     def load_neighbour_info(self, cache_dir, **kwargs):
 
         if cache_dir:
-            filename = self._create_cache_filename(cache_dir, **kwargs)
+            filename = self._create_cache_filename(cache_dir,
+                                                   prefix='resample_lut_nn_',
+                                                   **kwargs)
             cache = np.load(filename)
             for elt in ['valid_input_index', 'valid_output_index', 'index_array', 'distance_array']:
                 if isinstance(cache[elt], tuple):
@@ -231,7 +232,9 @@ class KDTreeResampler(BaseResampler):
 
     def save_neighbour_info(self, cache_dir, **kwargs):
         if cache_dir:
-            filename = self._create_cache_filename(cache_dir, **kwargs)
+            filename = self._create_cache_filename(cache_dir,
+                                                   prefix='resample_lut_nn_',
+                                                   **kwargs)
             LOG.info('Saving kd_tree neighbour info to %s', filename)
             cache = {'valid_input_index': self.resampler.valid_input_index,
                      'valid_output_index': self.resampler.valid_output_index,
@@ -271,7 +274,8 @@ class EWAResampler(BaseResampler):
 
         ewa_hash = self.get_hash(source_geo_def=source_geo_def)
 
-        filename = self._create_cache_filename(cache_dir, ewa_hash)
+        filename = self._create_cache_filename(cache_dir, ewa_hash,
+                                               prefix='resample_lut_ewa_')
         self._read_params_from_cache(cache_dir, ewa_hash, filename)
 
         if self.cache is not None:
@@ -386,7 +390,7 @@ class BilinearResampler(BaseResampler):
         self.resampler = None
 
     def precompute(self, mask=None, radius_of_influence=50000, epsilon=0,
-                   reduce_data=True, nprocs=1, segments=None,
+                   reduce_data=True, nprocs=1,
                    cache_dir=False, **kwargs):
         """Create bilinear coefficients and store them for later use.
 
@@ -399,41 +403,53 @@ class BilinearResampler(BaseResampler):
 
         source_geo_def = mask_source_lonlats(self.source_geo_def, mask)
 
-        bil_hash = self.get_hash(source_geo_def=source_geo_def,
-                                 radius_of_influence=radius_of_influence,
-                                 mode="bilinear")
-
-        filename = self._create_cache_filename(cache_dir, bil_hash)
-        self._read_params_from_cache(cache_dir, bil_hash, filename)
-
         if self.resampler is None:
-            if self.cache is not None:
+            kwargs = dict(source_geo_def=source_geo_def,
+                          target_geo_def=self.target_geo_def,
+                          radius_of_influence=radius_of_influence,
+                          neighbours=32,
+                          epsilon=epsilon,
+                          reduce_data=reduce_data)
+
+            self.resampler = XArrayResamplerBilinear(**kwargs)
+
+            try:
+                self.load_bil_info(cache_dir, **kwargs)
                 LOG.debug("Loaded bilinear parameters")
-                return self.cache
-            else:
+            except IOError:
                 LOG.debug("Computing bilinear parameters")
-
-            self.resampler = XArrayResamplerBilinear(source_geo_def,
-                                                     self.target_geo_def,
-                                                     radius_of_influence,
-                                                     neighbours=32,
-                                                     epsilon=epsilon,
-                                                     reduce_data=reduce_data,
-                                                     nprocs=nprocs,
-                                                     segments=segments)
-
-            bilinear_t, bilinear_s, input_idxs, idx_arr = \
                 self.resampler.get_bil_info()
+                self.save_bil_info(cache_dir, **kwargs)
 
-            if cache_dir:
-                self.cache = {'bilinear_s': bilinear_s,
-                              'bilinear_t': bilinear_t,
-                              'input_idxs': input_idxs,
-                              'idx_arr': idx_arr}
+    def load_bil_info(self, cache_dir, **kwargs):
 
-                self._update_caches(bil_hash, cache_dir, filename)
-            else:
-                del bilinear_t, bilinear_s, input_idxs, idx_arr
+        if cache_dir:
+            filename = self._create_cache_filename(cache_dir,
+                                                   prefix='resample_lut_bil_',
+                                                   **kwargs)
+            cache = np.load(filename)
+            for elt in ['bilinear_s', 'bilinear_t', 'valid_input_index',
+                        'index_array']:
+                if isinstance(cache[elt], tuple):
+                    setattr(self.resampler, elt, cache[elt][0])
+                else:
+                    setattr(self.resampler, elt, cache[elt])
+            cache.close()
+        else:
+            raise IOError
+
+    def save_bil_info(self, cache_dir, **kwargs):
+        if cache_dir:
+            filename = self._create_cache_filename(cache_dir,
+                                                   prefix='resample_lut_bil_',
+                                                   **kwargs)
+            LOG.info('Saving kd_tree neighbour info to %s', filename)
+            cache = {'bilinear_s': self.resampler.bilinear_s,
+                     'bilinear_t': self.resampler.bilinear_t,
+                     'valid_input_index': self.resampler.valid_input_index,
+                     'index_array': self.resampler.index_array}
+
+            np.savez(filename, **cache)
 
     def compute(self, data, fill_value=None, **kwargs):
         """Resample the given data using bilinear interpolation"""
