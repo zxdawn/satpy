@@ -1,0 +1,95 @@
+reader:
+  name: hyc_l1
+  short_name: HYC
+  long_name: HYC data in HDF5 format
+  description: reader for HYC data
+  status: Beta
+  supports_fsspec: false
+  sensors: [hyc]
+  reader: !!python/name:satpy.readers.yaml_reader.FileYAMLReader
+
+file_types:
+  hyc_l1:
+      file_reader: !!python/name:satpy.readers.hyc_l1.HYCL1FileHandler
+      file_patterns:
+      - PRS_L1_STD_{order_type}_{start_time:%Y%m%d%H%M%S}_{end_time:%Y%m%d%H%M%S}_{product_version}.he5
+      - PRS_L1_STD_{order_type}_{start_time:%Y%m%d%H%M%S}_{end_time:%Y%m%d%H%M%S}_{product_version}.zip
+
+datasets:
+  vnir:
+    name: vnir
+    file_type: hyc_l1
+    calibration:
+      radiance:
+        standrad_name: radiance
+        units: 'W m-2 sr-1 um-1'
+      # reflectance:
+      #   standard_name: toa_bidirectional_reflectance
+      #   units: '%'
+      counts:
+        standard_name: counts
+        units: '1'
+    file_key: HDFEOS/SWATHS/PRS_L1_HCO/Data Fields/VNIR_Cube
+
+  swir:
+    name: swir
+    file_type: hyc_l1
+    calibration:
+      radiance:
+        standrad_name: radiance
+        units: 'W m-2 sr-1 um-1'
+      # reflectance:
+      #   standard_name: toa_bidirectional_reflectance
+      #   units: '%'
+      counts:
+        standard_name: counts
+        units: '1'
+    file_key: HDFEOS/SWATHS/PRS_L1_HCO/Data Fields/SWIR_Cube
+
+  cw_vnir:
+    name: cw_vnir
+    file_type: hyc_l1
+    file_key: KDP_AUX/Cw_Vnir_Matrix
+    units: nm
+
+  cw_swir:
+    name: cw_swir
+    file_type: hyc_l1
+    file_key: KDP_AUX/Cw_Swir_Matrix
+    units: nm
+
+  lon_vnir:
+    name: lon_vnir
+    file_type: hyc_l1
+    file_key: HDFEOS/SWATHS/PRS_L1_HCO/Geolocation Fields/Longitude_VNIR
+    units: degree_east
+
+  lat_vnir:
+    name: lat_vnir
+    file_type: hyc_l1
+    file_key: HDFEOS/SWATHS/PRS_L1_HCO/Geolocation Fields/Latitude_VNIR
+    units: degree_north
+    
+  lon_swir:
+    name: lon_swir
+    file_type: hyc_l1
+    file_key: HDFEOS/SWATHS/PRS_L1_HCO/Geolocation Fields/Longitude_SWIR
+    units: degree_east
+
+  lat_swir:
+    name: lat_swir
+    file_type: hyc_l1
+    file_key: HDFEOS/SWATHS/PRS_L1_HCO/Geolocation Fields/Latitude_SWIR
+    units: degree_north
+
+  fwhm_vnir:
+    name: fwhm_vnir
+    file_type: hyc_l1
+    file_key: KDP_AUX/Fwhm_Vnir_Matrix
+    units: nm
+
+  fwhm_swir:
+    name: fwhm_swir
+    file_type: hyc_l1
+    file_key: KDP_AUX/Fwhm_Swir_Matrix
+    units: nm
