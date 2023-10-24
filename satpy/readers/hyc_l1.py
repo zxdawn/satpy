@@ -86,7 +86,7 @@ class HYCL1FileHandler(HDF5FileHandler):
 
     @property
     def platform_name(self):
-        """Get platform name"""
+        """Get platform name."""
         return 'PRISMA'
 
     def _get_metadata(self, data):
