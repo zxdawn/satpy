@@ -173,9 +173,20 @@ class HYCL1FileHandler(HDF5FileHandler):
         return data
 
     def get_area(self):
-        """Get the VNIR lonlats as the area."""
+        """Get the VNIR lonlats as the area.
+
+        Coregistered cubes correspond to the Radimetric Cubes
+            where also spatial coregistration of SWIR and PAN with respect to VNIR channel is performed.
+        """
         if self.area is None:
             lons = self['HDFEOS/SWATHS/PRS_L1_HCO/Geolocation Fields/Longitude_VNIR']
             lats = self['HDFEOS/SWATHS/PRS_L1_HCO/Geolocation Fields/Latitude_VNIR']
+
+            # set to correct order
+            lons = lons.rename({lons.dims[0]: 'x', lons.dims[1]: 'y'})
+            lons = lons.transpose('y', 'x')
+            lats = lats.rename({lats.dims[0]: 'x', lats.dims[1]: 'y'})
+            lats = lats.transpose('y', 'x')
+
             self.area = SwathDefinition(lons, lats)
             self.area.name = '_'.join([self.sensor, str(self.start_time)])
