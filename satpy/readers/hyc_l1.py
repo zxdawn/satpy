@@ -160,6 +160,22 @@ class HYCL1FileHandler(HDF5FileHandler):
         if dataset_id['name'] in ['vnir', 'swir']:
             data = self.calibrate(data, ds_info)
 
+        if dataset_id['name'] == 'cw_swir':
+            # subset to swir range
+            swir_start = self['/attr/Start_index_EO_SWIR']
+            swir_stop = self['/attr/Stop_index_EO_SWIR']
+            data = data.isel(y=slice(swir_start-1, swir_stop))
+            # rename band dims
+            data = data.rename({'y': 'bands_swir'})
+
+        if dataset_id['name'] == 'cw_vnir':
+            # subset to vnir range
+            vnir_start = self['/attr/Start_index_EO_VNIR']
+            vnir_stop = self['/attr/Stop_index_EO_VNIR']
+            data = data.isel(y=slice(vnir_start-1, vnir_stop))
+            # rename band dims
+            data = data.rename({'y': 'bands_vnir'})
+
         # add area
         self.get_area()
         data.attrs['area'] = self.area
