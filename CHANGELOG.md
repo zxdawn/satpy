@@ -1,3 +1,119 @@
+## Version 0.46.0 (2023/12/18)
+
+### Issues Closed
+
+* [Issue 2668](https://github.com/pytroll/satpy/issues/2668) - FCI HRFI true_color unavailable even after native resampling if upper_right_corner is used ([PR 2690](https://github.com/pytroll/satpy/pull/2690) by [@djhoese](https://github.com/djhoese))
+* [Issue 2664](https://github.com/pytroll/satpy/issues/2664) - Cannot generate day-night composites
+* [Issue 2654](https://github.com/pytroll/satpy/issues/2654) - Unable to read radiance with AVHRR EPS ([PR 2655](https://github.com/pytroll/satpy/pull/2655) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 2647](https://github.com/pytroll/satpy/issues/2647) - Preservation of input data dtype in processing FCI data
+* [Issue 2618](https://github.com/pytroll/satpy/issues/2618) - GCOM-C Support (Continued) ([PR 1094](https://github.com/pytroll/satpy/pull/1094) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 2588](https://github.com/pytroll/satpy/issues/2588) - FCI chunks/segments out of order if pad_data=False ([PR 2692](https://github.com/pytroll/satpy/pull/2692) by [@ameraner](https://github.com/ameraner))
+* [Issue 2263](https://github.com/pytroll/satpy/issues/2263) - VIIRS day composite 'snow_age' does not work with Satpy 0.37.1
+* [Issue 1496](https://github.com/pytroll/satpy/issues/1496) - Improve error reporting of satpy.utils.get_satpos
+* [Issue 1086](https://github.com/pytroll/satpy/issues/1086) - Add a reader for GCOM-C Level 1 data ([PR 1094](https://github.com/pytroll/satpy/pull/1094) by [@mraspaud](https://github.com/mraspaud))
+
+In this release 9 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 2694](https://github.com/pytroll/satpy/pull/2694) - Match all projectables in `NDVIHybridGreen.__call__` to avoid coordinate mismatch errors ([2668](https://github.com/pytroll/satpy/issues/2668), [2668](https://github.com/pytroll/satpy/issues/2668))
+* [PR 2692](https://github.com/pytroll/satpy/pull/2692) - Anticipate filehandler sorting in `GEOSegmentYAMLReader` to have sorted handlers also with `pad_data=False` ([2588](https://github.com/pytroll/satpy/issues/2588))
+* [PR 2690](https://github.com/pytroll/satpy/pull/2690) - Fix composites failing on non-aligned geolocation coordinates ([2668](https://github.com/pytroll/satpy/issues/2668))
+* [PR 2682](https://github.com/pytroll/satpy/pull/2682) - Update AHI HSD reader to correctly handle singleton arrays.
+* [PR 2674](https://github.com/pytroll/satpy/pull/2674) - Update xarray version in CF writer tests for compression kwarg
+* [PR 2671](https://github.com/pytroll/satpy/pull/2671) - Workaround AWIPS bug not handling integers properly in "awips_tiled" writer
+* [PR 2669](https://github.com/pytroll/satpy/pull/2669) - Fix RealisticColors compositor upcasting data to float64
+* [PR 2655](https://github.com/pytroll/satpy/pull/2655) - Fix missing radiance units in eps l1b ([2654](https://github.com/pytroll/satpy/issues/2654))
+
+#### Features added
+
+* [PR 2683](https://github.com/pytroll/satpy/pull/2683) - Fci/l2/amv/reader
+* [PR 2679](https://github.com/pytroll/satpy/pull/2679) - Update MiRS reader coefficient files to newer version
+* [PR 2677](https://github.com/pytroll/satpy/pull/2677) - Add remaining JPSS satellite platform aliases to "mirs" reader ([665](https://github.com/ssec/polar2grid/issues/665))
+* [PR 2669](https://github.com/pytroll/satpy/pull/2669) - Fix RealisticColors compositor upcasting data to float64
+* [PR 2660](https://github.com/pytroll/satpy/pull/2660) - Update tropomi_l2 reader with "_reduced" file patterns
+* [PR 2557](https://github.com/pytroll/satpy/pull/2557) - Add baseline for GeoColor composite including FCI, AHI and ABI recipes
+* [PR 2106](https://github.com/pytroll/satpy/pull/2106) - Add Scene function to use Hvplot backend visualization
+* [PR 1094](https://github.com/pytroll/satpy/pull/1094) - Add Gcom-C sgli reader ([2618](https://github.com/pytroll/satpy/issues/2618), [1086](https://github.com/pytroll/satpy/issues/1086))
+
+#### Backward incompatible changes
+
+* [PR 2684](https://github.com/pytroll/satpy/pull/2684) - Get rid of warnings in compositor tests
+
+#### Clean ups
+
+* [PR 2691](https://github.com/pytroll/satpy/pull/2691) - Reduce the number of warnings in writer tests
+* [PR 2690](https://github.com/pytroll/satpy/pull/2690) - Fix composites failing on non-aligned geolocation coordinates ([2668](https://github.com/pytroll/satpy/issues/2668))
+* [PR 2684](https://github.com/pytroll/satpy/pull/2684) - Get rid of warnings in compositor tests
+* [PR 2681](https://github.com/pytroll/satpy/pull/2681) - Get rid of warnings in resampler tests
+* [PR 2676](https://github.com/pytroll/satpy/pull/2676) - Convert times in SEVIRI readers to nanosecond precision to silence warnings
+* [PR 2658](https://github.com/pytroll/satpy/pull/2658) - Update unstable version of h5py in CI
+
+In this release 23 pull requests were closed.
+
+
+## Version 0.45.0 (2023/11/29)
+
+### Issues Closed
+
+* [Issue 2646](https://github.com/pytroll/satpy/issues/2646) - satpy/tests/scene_tests/test_resampling.py is using called_once in assertions rather than assert_called_once, causing test failures on Python 3.12 ([PR 2648](https://github.com/pytroll/satpy/pull/2648) by [@ArrayBolt3](https://github.com/ArrayBolt3))
+* [Issue 2643](https://github.com/pytroll/satpy/issues/2643) - SunZenithReducer defaults make True Color FCI imagery too dark at high solar zenith angles ([PR 2653](https://github.com/pytroll/satpy/pull/2653) by [@ameraner](https://github.com/ameraner))
+* [Issue 2638](https://github.com/pytroll/satpy/issues/2638) - Update AVHRR EPS reader to read cloud flags information ([PR 2639](https://github.com/pytroll/satpy/pull/2639) by [@fwfichtner](https://github.com/fwfichtner))
+* [Issue 2619](https://github.com/pytroll/satpy/issues/2619) - NDVI hybrid green correction triggers early dask computations ([PR 2623](https://github.com/pytroll/satpy/pull/2623) by [@pnuu](https://github.com/pnuu))
+* [Issue 2614](https://github.com/pytroll/satpy/issues/2614) - DayNightCompositor triggers early dask computation ([PR 2617](https://github.com/pytroll/satpy/pull/2617) by [@pnuu](https://github.com/pnuu))
+* [Issue 2613](https://github.com/pytroll/satpy/issues/2613) - modifier NIREmissivePartFromReflectance triggers early dask computation
+* [Issue 2604](https://github.com/pytroll/satpy/issues/2604) - grid_mapping attrs lead to failure of cf writer
+* [Issue 2601](https://github.com/pytroll/satpy/issues/2601) - Is the 31(32)-band read by the modis_l1b reader converted to bright temperature by default?
+
+In this release 8 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 2648](https://github.com/pytroll/satpy/pull/2648) - Fix assert_called_once usage in resample tests ([2646](https://github.com/pytroll/satpy/issues/2646))
+* [PR 2635](https://github.com/pytroll/satpy/pull/2635) - Fix nwcsaf_geo start time to be nominal time
+* [PR 2627](https://github.com/pytroll/satpy/pull/2627) - Fix ABI readers using wrong dtype for resolution-based chunks
+* [PR 2625](https://github.com/pytroll/satpy/pull/2625) - Cleanup various warnings encountered during tests
+* [PR 2623](https://github.com/pytroll/satpy/pull/2623) - Fix unnecessary Dask `compute()`s in `NDVIHybridGreen` compositor ([2619](https://github.com/pytroll/satpy/issues/2619))
+* [PR 2617](https://github.com/pytroll/satpy/pull/2617) - Reduce Dask computations in `DayNightCompositor` ([2614](https://github.com/pytroll/satpy/issues/2614))
+* [PR 2608](https://github.com/pytroll/satpy/pull/2608) - Fix ABI L2 to only convert reflectances to percentages
+* [PR 2607](https://github.com/pytroll/satpy/pull/2607) - Fix ABI L2 reader to produce reflectances as percentages
+* [PR 2606](https://github.com/pytroll/satpy/pull/2606) - Change platform name for EPIC (DSCOVR) to upper case.
+* [PR 2585](https://github.com/pytroll/satpy/pull/2585) - Make caching warn if some of the args are unhashable
+
+#### Features added
+
+* [PR 2653](https://github.com/pytroll/satpy/pull/2653) - Update Sun-zenith reducer defaults ([2643](https://github.com/pytroll/satpy/issues/2643))
+* [PR 2652](https://github.com/pytroll/satpy/pull/2652) - Add file pattern for CRRPh of NWC SAF GEO v2021
+* [PR 2642](https://github.com/pytroll/satpy/pull/2642) - Set dtype for get_lonlats() in NIR reflectance calculation
+* [PR 2640](https://github.com/pytroll/satpy/pull/2640) - Keep original dtype in DayNightCompositor
+* [PR 2639](https://github.com/pytroll/satpy/pull/2639) - Update AVHRR EPS reader to read cloud flags information ([2638](https://github.com/pytroll/satpy/issues/2638))
+* [PR 2637](https://github.com/pytroll/satpy/pull/2637) - Keep FCI data as 32-bit floats
+* [PR 2632](https://github.com/pytroll/satpy/pull/2632) - Add reader for OSI SAF L3 products
+* [PR 2631](https://github.com/pytroll/satpy/pull/2631) - Add a reader for MODIS Level 3 files in CMG format.
+* [PR 2623](https://github.com/pytroll/satpy/pull/2623) - Fix unnecessary Dask `compute()`s in `NDVIHybridGreen` compositor ([2619](https://github.com/pytroll/satpy/issues/2619))
+* [PR 2621](https://github.com/pytroll/satpy/pull/2621) - Add resolution-based chunking to ABI L1b reader
+* [PR 2610](https://github.com/pytroll/satpy/pull/2610) - Remove legacy resampler code
+
+#### Clean ups
+
+* [PR 2648](https://github.com/pytroll/satpy/pull/2648) - Fix assert_called_once usage in resample tests ([2646](https://github.com/pytroll/satpy/issues/2646))
+* [PR 2641](https://github.com/pytroll/satpy/pull/2641) - Add "A" and "D" checks to ruff config
+* [PR 2634](https://github.com/pytroll/satpy/pull/2634) - Remove duplicate entries of required netcdf variables in FCI reader
+* [PR 2625](https://github.com/pytroll/satpy/pull/2625) - Cleanup various warnings encountered during tests
+* [PR 2624](https://github.com/pytroll/satpy/pull/2624) - Replace assertRaises with pytest.raises
+* [PR 2621](https://github.com/pytroll/satpy/pull/2621) - Add resolution-based chunking to ABI L1b reader
+* [PR 2612](https://github.com/pytroll/satpy/pull/2612) - Remove tests for removed and deprecated functionality
+* [PR 2610](https://github.com/pytroll/satpy/pull/2610) - Remove legacy resampler code
+* [PR 2586](https://github.com/pytroll/satpy/pull/2586) - Replace flake8 with ruff in pre-commit and ci linting
+* [PR 2524](https://github.com/pytroll/satpy/pull/2524) - Refactor CFWriter utility into CF directory
+
+In this release 31 pull requests were closed.
+
+
 ## Version 0.44.0 (2023/10/17)
 
 ### Issues Closed
