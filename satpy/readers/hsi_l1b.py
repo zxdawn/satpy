@@ -1,0 +1,1 @@
+/home/xinz/Documents/githab/satpy_enmap/satpy/readers/hsi_l1b.py
