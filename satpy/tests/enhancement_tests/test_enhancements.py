@@ -44,6 +44,12 @@ def run_and_check_enhancement(func, data, expected, **kwargs):
     old_keys = set(pre_attrs.keys())
     # It is OK to have "enhancement_history" added
     new_keys = set(img.data.attrs.keys()) - {"enhancement_history"}
+    # In case of palettes are used, _FillValue is added.
+    # Colorize doesn't add the fill value, so ignore that
+    if "palettes" in kwargs and func.__name__ != "colorize":
+        assert "_FillValue" in new_keys
+        # Remove it from further comparisons
+        new_keys = new_keys - {"_FillValue"}
     assert old_keys == new_keys
 
     res_data_arr = img.data
@@ -331,11 +337,12 @@ class TestColormapLoading:
                 kwargs1["color_scale"] = color_scale
 
             cmap = create_colormap(kwargs1)
-            assert cmap.colors.shape[0] == 4
-            np.testing.assert_equal(cmap.colors[0], first_color)
-            assert cmap.values.shape[0] == 4
-            assert cmap.values[0] == unset_first_value
-            assert cmap.values[-1] == unset_last_value
+
+        assert cmap.colors.shape[0] == 4
+        np.testing.assert_equal(cmap.colors[0], first_color)
+        assert cmap.values.shape[0] == 4
+        assert cmap.values[0] == unset_first_value
+        assert cmap.values[-1] == unset_last_value
 
     def test_cmap_vrgb_as_rgba(self):
         """Test that data created as VRGB still reads as RGBA."""
@@ -343,12 +350,44 @@ class TestColormapLoading:
             cmap_data = _generate_cmap_test_data(None, "VRGB")
             np.save(cmap_filename, cmap_data)
             cmap = create_colormap({"filename": cmap_filename, "colormap_mode": "RGBA"})
-            assert cmap.colors.shape[0] == 4
-            assert cmap.colors.shape[1] == 4  # RGBA
-            np.testing.assert_equal(cmap.colors[0], [128 / 255., 1.0, 0, 0])
-            assert cmap.values.shape[0] == 4
-            assert cmap.values[0] == 0
-            assert cmap.values[-1] == 1.0
+
+        assert cmap.colors.shape[0] == 4
+        assert cmap.colors.shape[1] == 4  # RGBA
+        np.testing.assert_equal(cmap.colors[0], [128 / 255., 1.0, 0, 0])
+        assert cmap.values.shape[0] == 4
+        assert cmap.values[0] == 0
+        assert cmap.values[-1] == 1.0
+
+    def test_cmap_with_alpha_set(self):
+        """Test that the min_alpha and max_alpha arguments set the alpha channel correctly."""
+        with closed_named_temp_file(suffix=".npy") as cmap_filename:
+            cmap_data = _generate_cmap_test_data(None, "RGB")
+            np.save(cmap_filename, cmap_data)
+            cmap = create_colormap({"filename": cmap_filename, "min_alpha": 100, "max_alpha": 255})
+
+        assert cmap.colors.shape[0] == 4
+        assert cmap.colors.shape[1] == 4  # RGBA
+        # check that we start from min_alpha
+        np.testing.assert_equal(cmap.colors[0], [1.0, 0, 0, 100/255.])
+        # two thirds of the linear scale
+        np.testing.assert_almost_equal(cmap.colors[2], [1., 1., 1., (100+(2/3)*(255-100))/255])
+        # check that we end at max_alpha
+        np.testing.assert_equal(cmap.colors[3], [0, 0, 1., 1.0])
+        # check that values have not been changed
+        assert cmap.values.shape[0] == 4
+        assert cmap.values[0] == 0
+        assert cmap.values[-1] == 1.0
+
+    @pytest.mark.parametrize("alpha_arg", ["max_alpha", "min_alpha"])
+    def test_cmap_error_with_only_one_alpha_set(self, alpha_arg):
+        """Test that when only min_alpha or max_alpha arguments are set an error is raised."""
+        with closed_named_temp_file(suffix=".npy") as cmap_filename:
+            cmap_data = _generate_cmap_test_data(None, "RGB")
+            np.save(cmap_filename, cmap_data)
+
+            # check that if a value is missing we raise a ValueError
+            with pytest.raises(ValueError, match="Both 'min_alpha' and 'max_alpha' must be specified*."):
+                create_colormap({"filename": cmap_filename, alpha_arg: 255})
 
     @pytest.mark.parametrize(
         ("real_mode", "forced_mode"),
@@ -397,12 +436,13 @@ class TestColormapLoading:
         with satpy.config.set(config_path=[tmp_path]):
             rel_cmap_filename = os.path.join("colormaps", "my_colormap.npy")
             cmap = create_colormap({"filename": rel_cmap_filename, "colormap_mode": "RGBA"})
-            assert cmap.colors.shape[0] == 4
-            assert cmap.colors.shape[1] == 4  # RGBA
-            np.testing.assert_equal(cmap.colors[0], [128 / 255., 1.0, 0, 0])
-            assert cmap.values.shape[0] == 4
-            assert cmap.values[0] == 0
-            assert cmap.values[-1] == 1.0
+
+        assert cmap.colors.shape[0] == 4
+        assert cmap.colors.shape[1] == 4  # RGBA
+        np.testing.assert_equal(cmap.colors[0], [128 / 255., 1.0, 0, 0])
+        assert cmap.values.shape[0] == 4
+        assert cmap.values[0] == 0
+        assert cmap.values[-1] == 1.0
 
     def test_cmap_from_trollimage(self):
         """Test that colormaps in trollimage can be loaded."""
@@ -422,10 +462,10 @@ class TestColormapLoading:
         """Test that colors can be a list/tuple."""
         from satpy.enhancements import create_colormap
         colors = [
-            [0, 0, 1],
-            [1, 0, 1],
-            [0, 1, 1],
-            [1, 1, 1],
+            [0., 0., 1.],
+            [1., 0., 1.],
+            [0., 1., 1.],
+            [1., 1., 1.],
         ]
         values = [2, 4, 6, 8]
         cmap = create_colormap({"colors": colors, "color_scale": 1})
@@ -484,7 +524,7 @@ def test_on_dask_array():
     assert res.shape == arr.shape
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_area():
     """Return a fake 2×2 area."""
     from pyresample.geometry import create_area_def
