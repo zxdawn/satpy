@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License along with
 # satpy.  If not, see <http://www.gnu.org/licenses/>.
 """Enhancements."""
+from __future__ import annotations
 
 import logging
 import os
@@ -117,7 +118,7 @@ def on_dask_array(func):
 
 
 def using_map_blocks(func):
-    """Run the provided function using :func:`dask.array.core.map_blocks`.
+    """Run the provided function using :func:`dask.array.map_blocks`.
 
     This means dask will call the provided function with a single chunk
     as a numpy array.
@@ -556,7 +557,7 @@ def btemp_threshold(img, min_in, max_in, threshold, threshold_out=None, **kwargs
     tool called AWIPS.
 
     Args:
-        img (XRImage): Image object to be scaled
+        img (trollimage.xrimage.XRImage): Image object to be scaled
         min_in (float): Minimum input value to scale
         max_in (float): Maximum input value to scale
         threshold (float): Input value where to split data in to two regions
@@ -632,6 +633,9 @@ def _jma_true_color_reproduction(img_data, platform=None):
                 "goes-18": np.array([[1.1629, 0.1539, -0.2175],
                                      [-0.0252, 0.8725, 0.1300],
                                      [-0.0204, -0.1100, 1.0633]]),
+                "goes-19": np.array([[0.9481, 0.3706, -0.2194],
+                                     [-0.0150, 0.8605, 0.1317],
+                                     [-0.0174, -0.1009, 1.0512]]),
 
                 "mtg-i1": np.array([[0.9007, 0.2086, -0.0100],
                                     [-0.0475, 1.0662, -0.0414],

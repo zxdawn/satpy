@@ -98,7 +98,7 @@ class CompositeBase:
     represents something different than the inputs that went into the
     operation.
 
-    See the :class:`~satpy.composites.ModifierBase` class for information
+    See the :class:`~satpy.modifiers.base.ModifierBase` class for information
     on the similar concept of "modifiers".
 
     """
@@ -171,11 +171,10 @@ class CompositeBase:
         :func:`satpy.utils.unify_chunks`).
 
         Args:
-            data_arrays (List[arrays]): Arrays to be checked
+            data_arrays: Arrays to be checked
 
         Returns:
-            data_arrays (List[arrays]):
-                Arrays with negligible non-dimensional coordinates removed.
+            Arrays with negligible non-dimensional coordinates removed.
 
         Raises:
             :class:`IncompatibleAreas`:
@@ -239,7 +238,7 @@ class CompositeBase:
         :attr:`NEGLIGIBLE_COORDS` module attribute.
 
         Args:
-            data_arrays (List[arrays]): Arrays to be checked
+            data_arrays: Arrays to be checked
         """
         new_arrays = []
         for ds in data_arrays:
@@ -299,7 +298,7 @@ class RatioCompositor(CompositeBase):
             raise ValueError("Expected 2 datasets, got %d" % (len(projectables),))
         projectables = self.match_data_arrays(projectables)
         info = combine_metadata(*projectables)
-        info["name"] = self.attrs["name"]
+        info.update(self.attrs)
 
         proj = projectables[0] / projectables[1]
         proj.attrs = info
@@ -707,7 +706,7 @@ class DayNightCompositor(GenericCompositor):
                              blending of the given channels
             lim_high (float): upper limit of Sun zenith angle for the
                              blending of the given channels
-            day_night (string): "day_night" means both day and night portions will be kept
+            day_night (str): "day_night" means both day and night portions will be kept
                                 "day_only" means only day portion will be kept
                                 "night_only" means only night portion will be kept
             include_alpha (bool): This only affects the "day only" or "night only" result.
@@ -1907,6 +1906,9 @@ class MaskingCompositor(GenericCompositor):
         projectables = self.match_data_arrays(projectables)
         data_in = projectables[0]
         mask_in = projectables[1]
+
+        # remove "bands" dimension for single band masks (ex. "L")
+        mask_in = mask_in.squeeze(drop=True)
 
         alpha_attrs = data_in.attrs.copy()
         data = self._select_data_bands(data_in)

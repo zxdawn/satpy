@@ -26,9 +26,10 @@ import os
 import pathlib
 import platform
 import warnings
+from collections.abc import Mapping, MutableMapping
 from contextlib import contextmanager
 from copy import deepcopy
-from typing import Literal, Mapping, Optional
+from typing import Literal, Optional
 from urllib.parse import urlparse
 
 import dask.utils
@@ -37,7 +38,7 @@ import xarray as xr
 import yaml
 from yaml import BaseLoader, UnsafeLoader
 
-from satpy._compat import DTypeLike
+from satpy._compat import ArrayLike, DTypeLike
 
 _is_logging_on = False
 TRACE_LEVEL = 5
@@ -177,15 +178,18 @@ def in_ipynb():
 # Spherical conversions
 
 
-def lonlat2xyz(lon, lat):
+def lonlat2xyz(
+        lon: ArrayLike,
+        lat: ArrayLike,
+) -> tuple[ArrayLike, ArrayLike, ArrayLike]:
     """Convert lon lat to cartesian.
 
     For a sphere with unit radius, convert the spherical coordinates
     longitude and latitude to cartesian coordinates.
 
     Args:
-        lon (number or array of numbers): Longitude in °.
-        lat (number or array of numbers): Latitude in °.
+        lon: Longitude in °.
+        lat: Latitude in °.
 
     Returns:
         (x, y, z) Cartesian coordinates [1]
@@ -198,21 +202,26 @@ def lonlat2xyz(lon, lat):
     return x, y, z
 
 
-def xyz2lonlat(x, y, z, asin=False):
+def xyz2lonlat(
+        x: ArrayLike,
+        y: ArrayLike,
+        z: ArrayLike,
+        asin: bool = False,
+) -> tuple[ArrayLike, ArrayLike]:
     """Convert cartesian to lon lat.
 
     For a sphere with unit radius, convert cartesian coordinates to spherical
     coordinates longitude and latitude.
 
     Args:
-        x (number or array of numbers): x-coordinate, unitless
-        y (number or array of numbers): y-coordinate, unitless
-        z (number or array of numbers): z-coordinate, unitless
-        asin (optional, bool): If true, use arcsin for calculations.
+        x: x-coordinate, unitless
+        y: y-coordinate, unitless
+        z: z-coordinate, unitless
+        asin: If true, use arcsin for calculations.
             If false, use arctan2 for calculations.
 
     Returns:
-        (lon, lat): Longitude and latitude in °.
+        Longitude and latitude in °.
     """
     lon = np.rad2deg(np.arctan2(y, x))
     if asin:
@@ -433,7 +442,7 @@ def _get_first_available_item(data_dict, possible_keys):
     raise KeyError("None of the possible keys found: {}".format(", ".join(possible_keys)))
 
 
-def recursive_dict_update(d, u):
+def recursive_dict_update(d: MutableMapping, u: Mapping) -> None:
     """Recursive dictionary update.
 
     Copied from:
@@ -443,11 +452,11 @@ def recursive_dict_update(d, u):
     """
     for k, v in u.items():
         if isinstance(v, Mapping):
-            r = recursive_dict_update(d.get(k, {}), v)
+            r = d.get(k, {})
+            recursive_dict_update(r, v)
             d[k] = r
         else:
             d[k] = u[k]
-    return d
 
 
 def _check_yaml_configs(configs, key):
@@ -572,7 +581,7 @@ def unify_chunks(*data_arrays: xr.DataArray) -> tuple[xr.DataArray, ...]:
     """Run :func:`xarray.unify_chunks` if input dimensions are all the same size.
 
     This is mostly used in :class:`satpy.composites.CompositeBase` to safe
-    guard against running :func:`dask.array.core.map_blocks` with arrays of
+    guard against running :func:`dask.array.map_blocks` with arrays of
     different chunk sizes. Doing so can cause unexpected results or errors.
     However, xarray's ``unify_chunks`` will raise an exception if dimensions
     of the provided DataArrays are different sizes. This is a common case for
@@ -886,15 +895,15 @@ def find_in_ancillary(data, dataset):
     return matches[0]
 
 
-def datetime64_to_pydatetime(dt64):
+def datetime64_to_pydatetime(dt64: np.datetime64) -> datetime.datetime:
     """Convert numpy.datetime64 timestamp to Python datetime.
 
     Discards nanosecond precision, because Python datetime only has microsecond
     precision.
 
     Args:
-        dt64 (np.datetime64): Timestamp to be converted
-    Returns (dt.datetime):
+        dt64: Timestamp to be converted
+    Returns:
         Converted timestamp
     """
     return dt64.astype("datetime64[us]").astype(datetime.datetime)

@@ -45,7 +45,7 @@ Reader Table
     Alpha
         This denotes early development status. Reader is functional and implements some
         or all of the nominal features. There might be bugs. Exactness of results is
-        not be guaranteed. Use at your own risk.
+        not guaranteed. Use at your own risk.
 
     Beta
         This denotes final developement status. Reader is functional and implements all
@@ -63,32 +63,37 @@ SEVIRI L1.5 data readers
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: satpy.readers.seviri_base
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 SEVIRI HRIT format reader
 """""""""""""""""""""""""
 
 .. automodule:: satpy.readers.seviri_l1b_hrit
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 SEVIRI Native format reader
 """""""""""""""""""""""""""
 
 .. automodule:: satpy.readers.seviri_l1b_native
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 SEVIRI netCDF format reader
 """""""""""""""""""""""""""
 
 .. automodule:: satpy.readers.seviri_l1b_nc
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 
 Other xRIT-based readers
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: satpy.readers.hrit_base
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 
 JMA HRIT format reader
@@ -96,49 +101,58 @@ JMA HRIT format reader
 
 
 .. automodule:: satpy.readers.hrit_jma
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 GOES HRIT format reader
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: satpy.readers.goes_imager_hrit
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 Electro-L HRIT format reader
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: satpy.readers.electrol_hrit
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 hdf-eos based readers
 ^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: satpy.readers.modis_l1b
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 .. automodule:: satpy.readers.modis_l2
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 satpy cf nc readers
 ^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: satpy.readers.satpy_cf_nc
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 hdf5 based readers
 ^^^^^^^^^^^^^^^^^^
 
 .. automodule:: satpy.readers.agri_l1
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 .. automodule:: satpy.readers.ghi_l1
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 Arctica-M N1 HDF5 format reader
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: satpy.readers.msu_gsa_l1b
-    :noindex:
+   :noindex:
+   :no-special-members:
 
 
 Filter loaded files
@@ -168,7 +182,7 @@ to them. By default Satpy will provide the version of the dataset with the
 highest resolution and the highest level of calibration (brightness
 temperature or reflectance over radiance). It is also possible to request one
 of these exact versions of a dataset by using the
-:class:`~satpy.dataset.DataQuery` class::
+:class:`~satpy.dataset.dataid.DataQuery` class::
 
     >>> from satpy import DataQuery
     >>> my_channel_id = DataQuery(name='IR_016', calibration='radiance')
@@ -215,6 +229,9 @@ load the datasets using e.g.::
     check the
     :meth:`scn.missing_datasets <satpy.scene.Scene.missing_datasets>`
     property for any ``DataID`` that could not be loaded.
+
+Available datasets
+------------------
 
 To find out what datasets are available from a reader from the files that were
 provided to the ``Scene`` use
@@ -297,6 +314,9 @@ time etc. The following attributes are standardized across all readers:
   :class:`~pyresample.geometry.SwathDefinition` if data is geolocated. Areas are used for gridded
   projected data and Swaths when data must be described by individual longitude/latitude
   coordinates. See the Coordinates section below.
+* ``sensor``: The name of the sensor that recorded the data. For full support through Satpy this
+  should be all lowercase. If the dataset is the result of observations from multiple sensors a
+  ``set`` object can be used to specify more than one sensor name.
 * ``reader``: The name of the Satpy reader that produced the dataset.
 * ``orbital_parameters``: Dictionary of orbital parameters describing the satellite's position.
   See the :ref:`orbital_parameters` section below for more information.
@@ -385,6 +405,10 @@ For *polar orbiting* satellites the readers usually provide coordinates and view
 the swath as ancillary datasets. Additional metadata related to the satellite position includes:
 
   * ``tle``: Two-Line Element (TLE) set used to compute the satellite's orbit
+  * ``start_direction``: The direction of satellite movement (ascending or descending) at the start of the granule.
+  * ``end_direction``: The direction of satellite movement (ascending or descending) at the end of the granule.
+  * ``start_orbit``: The orbit number at the start of the granule.
+  * ``end_orbit``: The orbit number at the end of the granule. Typically, this is the same as `start_orbit`.
 
 .. _data_array_coordinates:
 

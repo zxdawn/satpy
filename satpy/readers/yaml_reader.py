@@ -116,7 +116,7 @@ def load_yaml_configs(*config_files, loader=Loader):
     logger.debug("Reading %s", str(config_files))
     for config_file in config_files:
         with open(config_file, "r", encoding="utf-8") as fd:
-            config = recursive_dict_update(config, yaml.load(fd, Loader=loader))
+            recursive_dict_update(config, yaml.load(fd, Loader=loader))
     _verify_reader_info_assign_config_files(config, config_files)
     return config
 
@@ -546,9 +546,9 @@ class FileYAMLReader(GenericYAMLReader, DataDownloadMixin):
         We assume here requirements are available.
 
         Raises:
-            KeyError, if no handler for the given requirements is available.
-            RuntimeError, if there is a handler for the given requirements,
-            but it doesn't match the filename info.
+            (Exception) `KeyError`: if no handler for the given requirements is available.
+            (Exception) `RuntimeError`: if there is a handler for the given requirements,
+                                        but it doesn't match the filename info.
 
         """
         req_fh = []
@@ -636,8 +636,9 @@ class FileYAMLReader(GenericYAMLReader, DataDownloadMixin):
                     self.file_handlers.get(filetype, []) + filehandlers,
                     key=lambda fhd: (fhd.start_time, fhd.filename))
 
-        # load any additional dataset IDs determined dynamically from the file
-        # and update any missing metadata that only the file knows
+        # Update dataset IDs with IDs determined dynamically from the file
+        # and/or update any missing metadata that only the file knows.
+        # Check if the dataset ID is loadable from that file.
         self.update_ds_ids_from_file_handlers()
         return created_fhs
 
@@ -911,14 +912,14 @@ class FileYAMLReader(GenericYAMLReader, DataDownloadMixin):
                 provided key. Loadable datasets are always searched first,
                 but if ``available_only=False`` (default) then all known
                 datasets will be searched.
-            kwargs: See :func:`satpy.readers.get_key` for more information about
+            kwargs: See :func:`satpy.dataset.data_dict.get_key` for more information about
                 kwargs.
 
         Returns:
             Best matching DataID to the provided ``key``.
 
         Raises:
-            KeyError: if no key match is found.
+            (Exception) KeyError: if no key match is found.
 
         """
         try:
@@ -1156,7 +1157,7 @@ class GEOSegmentYAMLReader(GEOFlippableFileYAMLReader):
     This reader pads the data to full geostationary disk if necessary.
 
     This reader uses an optional ``pad_data`` keyword argument that can be
-    passed to :meth:`Scene.load` to control if padding is done (True by
+    passed to :meth:`satpy.scene.Scene.load` to control if padding is done (True by
     default). Passing `pad_data=False` will return data unpadded.
 
     When using this class in a reader's YAML configuration, segmented file
@@ -1381,8 +1382,10 @@ def _get_empty_segment_with_height(empty_segment, new_height, dim):
         # if current empty segment is too tall, slice the DataArray
         return empty_segment[:new_height, :]
     if empty_segment.shape[0] < new_height:
-        # if current empty segment is too short, concatenate a slice of the DataArray
-        return xr.concat([empty_segment, empty_segment[:new_height - empty_segment.shape[0], :]], dim=dim)
+        # if current empty segment is too short, pad to the new size using the empty segment values
+        return empty_segment.pad(pad_width={dim : (new_height - empty_segment.shape[0], 0)},
+                                 mode="constant",
+                                 constant_values=empty_segment[0, 0])
     return empty_segment
 
 

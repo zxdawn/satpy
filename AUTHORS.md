@@ -20,6 +20,7 @@ The following people have made contributions to this project:
 - [Pierre de Buyl (pdebuyl)](https://github.com/pdebuyl)
 - [Eric Bruning (deeplycloudy)](https://github.com/deeplycloudy)
 - [Manuel Carranza (manucarran)](https://github.com/manucarran)
+- [Guido Cioni (guidocioni)](https://github.com/guidocioni)
 - [Lorenzo Clementi (loreclem)](https://github.com/loreclem)
 - [Colin Duff (ColinDuff)](https://github.com/ColinDuff)
 - [Radar, Satellite and Nowcasting Division (meteoswiss-mdr)](https://github.com/meteoswiss-mdr)
@@ -45,8 +46,10 @@ The following people have made contributions to this project:
 - [Mikhail Itkin (mitkin)](https://github.com/mitkin)
 - [Tommy Jasmin (tommyjasmin)](https://github.com/tommyjasmin)
 - [Jactry Zeng](https://github.com/jactry)
+- [Zoé Jequier](https://github.com/jequierz)
 - [Johannes Johansson (JohannesSMHI)](https://github.com/JohannesSMHI)
 - [Sauli Joro (sjoro)](https://github.com/sjoro)
+- [Przemyslaw Juda (pjuda)](https://github.com/pjuda)
 - [Pouria Khalaj](https://github.com/pkhalaj)
 - [Janne Kotro (jkotro)](https://github.com/jkotro)
 - [Beke Kremmling (bkremmli)](https://github.com/bkremmli) - Deutscher Wetterdienst

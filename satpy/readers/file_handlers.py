@@ -191,7 +191,7 @@ class BaseFileHandler:
         This method should **not** update values of the dataset information
         dictionary **unless** this file handler has a matching file type
         (the data could be loaded from this object in the future) and at least
-        **one** :class:`satpy.dataset.DataID` key is also modified.
+        **one** :class:`satpy.dataset.dataid.DataID` key is also modified.
         Otherwise, this file type may override the information provided by
         a more preferred file type (as specified in the YAML file).
         It is recommended that any non-ID metadata be updated during the
@@ -251,10 +251,16 @@ class BaseFileHandler:
         Example 2 - Add dynamic datasets from the file::
 
             def available_datasets(self, configured_datasets=None):
-                "Add information to configured datasets."
+                "Add datasets dynamically determined from the file."
                 # pass along existing datasets
                 for is_avail, ds_info in (configured_datasets or []):
-                    yield is_avail, ds_info
+                    if is_avail is not None:
+                        # some other file handler said it has this dataset
+                        # we don't know any more information than the previous
+                        # file handler so let's yield early
+                        yield is_avail, ds_info
+                        continue
+                    yield self.file_type_matches(ds_info["file_type"]), ds_info
 
                 # get dynamic variables known to this file (that we created)
                 for var_name, val in self.dynamic_variables.items():

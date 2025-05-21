@@ -485,7 +485,9 @@ needs to implement a few methods:
 
    This method has to return an xarray.DataArray instance if the loading is
    successful, containing the data and :ref:`metadata <dataset_metadata>` of the
-   loaded dataset, or return None if the loading was unsuccessful.
+   loaded dataset, or return None if the loading was unsuccessful. If the reader
+   is reading satellite data the returned xarray.DataArrays should also have the
+   attributes ``platform_name`` and ``sensor`` with names according to https://space.oscar.wmo.int/.
 
    The DataArray should at least have a ``y`` dimension. For data covering
    a 2D region on the Earth, their should be at least a ``y`` and ``x``
@@ -500,7 +502,7 @@ needs to implement a few methods:
    :doc:`remote_file_support`.
 
  - the ``get_area_def`` method, that takes as single argument the
-   :class:`~satpy.dataset.DataID` for which we want
+   :class:`DataID <satpy.dataset.dataid.DataID>` for which we want
    the area. It should return a :class:`~pyresample.geometry.AreaDefinition`
    object. For data that cannot be geolocated with an area
    definition, the pixel coordinates will be loaded using the
@@ -549,13 +551,13 @@ better idea.
    please consider carefully what data type you should scale or calibrate your
    data to.
 
-   Single precision floats (`np.float32`) is a good compromise, as it has 23
+   Single precision floats (``np.float32``) is a good compromise, as it has 23
    significant bits (mantissa) and can thus represent 16 bit integers exactly,
    as well as keeping the memory footprint half of a double precision float.
 
    One commonly used method in readers is :meth:`xarray.DataArray.where` (to
-   mask invalid data) which can be coercing the data to `np.float64`. To ensure
-   for example that integer data is coerced to `np.float32` when
+   mask invalid data) which can be coercing the data to ``np.float64``. To ensure
+   for example that integer data is coerced to ``np.float32`` when
    :meth:`xarray.DataArray.where` is used, you can do::
 
      my_float_dataarray = my_int_dataarray.where(some_condition, np.float32(np.nan))
