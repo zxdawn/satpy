@@ -47,6 +47,9 @@ class HSIBaseFileHandler(BaseFileHandler):
         super(HSIBaseFileHandler, self).__init__(filename, filename_info, filetype_info)
         self.area = None
 
+        # get the absolute path for enpt
+        filename = os.path.abspath(filename)
+
         # set config for enpt
         config_minimal = dict(path_l1b_enmap_image=filename, drop_bad_bands=False)
 
