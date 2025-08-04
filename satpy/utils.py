@@ -29,7 +29,7 @@ import warnings
 from collections.abc import Mapping, MutableMapping
 from contextlib import contextmanager
 from copy import deepcopy
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 from urllib.parse import urlparse
 
 import dask.utils
@@ -559,8 +559,8 @@ def check_satpy(readers=None, writers=None, packages=None):
         None
 
     """
-    from satpy.readers import configs_for_reader
-    from satpy.writers import configs_for_writer
+    from satpy.readers.core.config import configs_for_reader
+    from satpy.writers.core.config import configs_for_writer
 
     print("Readers")  # noqa: T201
     print("=======")  # noqa: T201
@@ -808,7 +808,7 @@ def _check_file_protocols(filenames, storage_options):
 
 
 def _sort_files_to_local_remote_and_fsfiles(filenames):
-    from satpy.readers import FSFile
+    from satpy.readers.core.remote import FSFile
 
     local_files = []
     remote_files = []
@@ -828,7 +828,7 @@ def _sort_files_to_local_remote_and_fsfiles(filenames):
 def _filenames_to_fsfile(filenames, storage_options):
     import fsspec
 
-    from satpy.readers import FSFile
+    from satpy.readers.core.remote import FSFile
 
     if filenames:
         fsspec_files = fsspec.open_files(filenames, **storage_options)
@@ -907,3 +907,37 @@ def datetime64_to_pydatetime(dt64: np.datetime64) -> datetime.datetime:
         Converted timestamp
     """
     return dt64.astype("datetime64[us]").astype(datetime.datetime)
+
+
+def _import_and_warn_new_location(new_module: str, name: str) -> Any:
+    import inspect
+    from importlib import import_module
+
+    frame = inspect.stack()[1]
+    old_module_name = inspect.getmodule(frame[0]).__name__  # type: ignore
+
+    mod = import_module(new_module)
+    obj = getattr(mod, name)
+
+    warnings.warn(
+        f"'{old_module_name}.{name}' has been moved to '{new_module}.{name}'. "
+        f"Import from the new location instead (ex. 'from {new_module} import {name}'). "
+        "The old import paths will be removed in Satpy 1.0",
+        stacklevel=3,
+    )
+    return obj
+
+
+def flatten_dict(d, parent_key="", sep="_"):
+    """Flatten a nested dictionary.
+
+    Based on https://stackoverflow.com/a/6027615/5703449
+    """
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, parent_key=new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
