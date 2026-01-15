@@ -29,6 +29,8 @@ from glob import glob
 import numpy as np
 import rasterio
 import xarray as xr
+from datetime import datetime
+from lxml import etree as ElementTree
 from pyresample.geometry import SwathDefinition
 from enpt.model.images.images_sensorgeo import EnMAP_SWIR_SensorGeo, EnMAP_VNIR_SensorGeo
 from enpt.model.metadata import EnMAP_Metadata_L1B_SensorGeo
@@ -82,6 +84,7 @@ class HSIBaseFileHandler(BaseFileHandler):
         if len(content) == 1 and os.path.isdir(content[0]):
             for fp in glob(os.path.join(self.root_dir, '**', '*')):
                 shutil.move(fp, self.root_dir)
+
 
     def _load_bands(self):
         # read wavelength which is the dim for other variables
@@ -137,6 +140,14 @@ class HSIBaseFileHandler(BaseFileHandler):
         """Get sensor name."""
         # hard code here
         return 'hsi'
+
+    @property
+    def end_time(self):
+        """Get the end_time attrs manually"""
+        xml = ElementTree.parse(self.meta.path_xml).getroot()
+        end_time = datetime.strptime(xml.find("base/temporalCoverage/stopTime").text, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+        return end_time
 
     def get_metadata(self):
         """Derive metadata."""
